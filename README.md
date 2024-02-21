@@ -1,5 +1,8 @@
 # zWireshark
 Produces a network trace file from TCPIP on z/OS which Wireshark can use.
+For example 
+![example of a ping to z/OS](https://colinpaiceblog.files.wordpress.com/2024/02/zwireshark-1.jpg?w=999)
+
 ##  Capturing a trace
 The TCPTRACE modules uses a documented TCPIP interface to collect packet trace data.  It writes it to a file which can be downloaded and used as input to wireshark.
 
