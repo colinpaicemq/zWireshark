@@ -1,0 +1,56 @@
+// routines to write data to a .pcap file.
+ /**************************************************************
+ MIT License
+ Copyright (c) 2024 Colin Paice
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ * Contributors:
+ *   Colin Paice - Initial Contribution
+ ************************************************************/
+ //
+ //  write file opens the file on first use
+ //  if there are any problems is sets the file handle to -1
+ //  and ignores any future requests
+ //  if the global debug flag is set it writes the data
+ //  in hex to stdout
+ //
+FILE * pcap = 0;
+void writeFile(char * fileName, char * buffer,int length)
+{
+  if ((int) pcap == -1) return; // bad file
+  if ((int) pcap == 0)
+  {
+    pcap= fopen(fileName, "wb");
+    if ((int) pcap  == 0)
+    {
+       perror("fopen pcap ");
+       pcap =(FILE *)  -1; // problem with file
+       return;
+    }
+  }
+  int sizeWritten;
+  sizeWritten = fwrite(buffer,1,length,pcap);
+  if (sizeWritten != length)
+  {
+    perror(" Problem writing to the //PCAP file \n");
+  }
+  if (debug > 0)
+  {
+    fprintf(stderr,"  \n");
+    printHex(stderr,buffer,length);
+  }
+}
