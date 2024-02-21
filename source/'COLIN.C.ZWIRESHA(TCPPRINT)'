@@ -22,6 +22,7 @@
  ************************************************************/
 #include <EZBNMCTE.h>
 #include <EZBYPTHH.h>
+
 //
 //  this routine is passed in a CTRACE format record
 //  it has one or more CTRACE records
@@ -84,6 +85,7 @@ void printPacket(char * pIn ,int lIn)
       printf("segment offset %u\n",pH-> PTH_OffSegLen);
     }
     //convert the IP address to printable
+    printf("%16.16s ",pH  -> PTH_Name. PTH_InfName);
     printIPInfo(pH  -> PTH_Ipaddrs. PTH_Src,
                 pH  -> PTH_Ipaddrs. PTH_Dst,
                 pH  -> PTH_SPort,

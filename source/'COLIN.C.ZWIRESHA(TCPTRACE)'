@@ -23,6 +23,8 @@
  * Contributors:
  *   Colin Paice - Initial Contribution
  ************************************************************/
+ #pragma comment (copyright,"Copyright:Colin Paice.  Version 1.1")
+
  // options ( all in uppercase)
  //  --PORT nnn   which port on z/OS
  //  --WAIT sss   wait up to sss seconds before stopping

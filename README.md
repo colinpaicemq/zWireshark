@@ -98,3 +98,7 @@ then use
 ```
 tso receive indsn('myid.ZWIRESHA.LOAD.XMIT')
 ``` 
+
+# Change history
+2024 Feb 24: Version 1.1 Add interface name to the printed output
+2024 Feb 24: Version 1.1 Add copyright and version to the load module  
