@@ -43,9 +43,27 @@ void printPacket(char * pIn ,int lIn)
         int capturedLength ;
         int originalLength ;
         } header;
+         char data[0];
     } pcaprow;
   #pragma pack(reset)
   int lData;
+
+  // now we know the amount of data to write - check buffer
+  // is big enough for all of the data in the CTE entry
+  // so this buffer is much bigger than needed
+
+  if (lIn + sizeof(pcaprow.header)        > lWriteBuffer)
+  {
+    if (pWriteBuffer != 0)
+       free(pWriteBuffer);
+     lWriteBuffer = lIn + sizeof(pcaprow.header) ; // new size
+     pWriteBuffer = malloc(lWriteBuffer);
+     if (pWriteBuffer == 0)
+     {
+        perror("malloc failed");
+        return  ;
+     }
+  }
   //
   // process the data
   //
@@ -56,8 +74,6 @@ void printPacket(char * pIn ,int lIn)
   {
     if (pCurr >=  pIn + lIn)
       break;  // off the end
-    if ( debug > 0)
-      printf("CTE Loop %i\n");
     // The record passed in is a CTrace Entry format with a header
     // the data, and a trailer.
     pCTE = (struct cte *) pCurr;
@@ -68,25 +84,7 @@ void printPacket(char * pIn ,int lIn)
     // trace data
     struct pthdr_t * pH;
     pH = (struct pthdr_t * )  pData ;
-    lData = pH  ->  PTH_Tlen ;
-    int lH = pH  ->PTH_len ;
-    int lp  = pH ->  PTH_Plen ;
-    int zz = lIn - lH - lData ;
-//  if ( zz != 18)
-//  {
-//  fprintf(stderr,"? inl %i header len %i  pl %i dl %i ! %i \n",
-//               lIn, lH, lp, lData,zz);
-//  printHex(stderr,pIn,lIn);
-//  }
-    if (  pH  ->  PTH_Tlen +  pH  ->PTH_len > lIn) // problem?
-    {
-       lData =  lIn -  pH  ->  PTH_Tlen ;
-      if (debug > 0)
-      {
-         printf("bad data, buffer length %i h len %i dlen %i\n",
-                 lIn, lH, lData);
-      }
-    }
+    lData =  lIn - pH  ->PTH_len; //  length - header
 
     // convert the time from the record to Unix time
     unsigned long long tod;
@@ -122,13 +120,13 @@ void printPacket(char * pIn ,int lIn)
 // del t payloadLength  = pH  ->  PTH_Tlen    ;
     int payloadLength  = pH  ->  PTH_Plen    ;
     int tracedLen = pH  ->  PTH_Tlen;
-//  int lWriteData =  tracedLen    +  sizeof(pcaprow.header) ;
+    int lWriteData =  tracedLen    +  sizeof(pcaprow.header) ;
 
     if (debug > 0)
     {
       printf("Original Payloadlength %i\n",payloadLength);
       printf("Payload  traced %i\n",tracedLen);
-//    printf("data     written %i\n",lWriteData );
+      printf("data     written %i\n",lWriteData );
       unsigned int interface = pH-> PTH_InfIx;
       printf("interface init %i\n",interface);
       printf("segment offset %u\n",pH-> PTH_OffSegLen);
@@ -140,8 +138,8 @@ void printPacket(char * pIn ,int lIn)
                 pH  -> PTH_SPort,
                 pH  -> PTH_DPort);
     // print the data we have been passed
-//  printHex(stdout,pData + pH-> PTH_len,
-//             lWriteData        );
+    printHex(stdout,pData + pH-> PTH_len,
+               lWriteData        );
     //         payloadLength                          );
     // we need pragma pack to avoid alignment issues
 //  if ( writeLength > sizeof(pcaprow.data))
@@ -157,18 +155,16 @@ void printPacket(char * pIn ,int lIn)
      pcaprow.header.uSeconds = uSeconds ;
      pcaprow.header.capturedLength = tracedLen  ;
      pcaprow.header.originalLength = payloadLength;
-     writeFile("DD:PCAP",(char * )&pcaprow  ,sizeof(pcaprow));
-//!  printHex(stdout,&pcaprow  ,sizeof(pcaprow));
 //   memcpy(&pcaprow.data[0],pData + pH-> PTH_len , lWriteData );
-//   memcpy(pWriteBuffer,&pcaprow,sizeof(pcaprow));
-//   memcpy(pWriteBuffer+sizeof(pcaprow),
-//          pData + pH-> PTH_len,
-//          tracedLen );
+     memcpy(pWriteBuffer,&pcaprow,sizeof(pcaprow));
+     memcpy(pWriteBuffer+sizeof(pcaprow),
+            pData + pH-> PTH_len,
+            tracedLen );
 //    int lWrite   =  payloadLength+sizeof(pcaprow.header);
 //   writeFile("DD:PCAP",(char * )& pcaprow , lWriteData +
-//   writeFile("DD:PCAP",(char * )pWriteBuffer , lWriteData +
-     writeFile("DD:PCAP",pData + lH, lData);
-//!  printHex(stdout,pData + lH,lData);
+     writeFile("DD:PCAP",(char * )pWriteBuffer , lWriteData +
+          sizeof(pcaprow.header));
+//   writeFile("DD:PCAP",(char * )& pcaprow , writeLength +
     }
     else
     {
