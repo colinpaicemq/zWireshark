@@ -69,8 +69,8 @@ void *thread(void * pArg ) {
        rc=  __console2(&cons, &reply[0], &concmd);
        if (rc != 0)
           perror("__console2");
-       printf("__console2 gave rc  %d function %d\n",rc,concmd);
   #ifdef debug
+       printf("__console2 gave rc  %d function %d\n",rc,concmd);
        printHex(stdout,cons.__cm2_mod_cartptr,8);
        printHex(stdout,cons.__cm2_mod_considptr,4);
        memcpy(&cart[0],cons.__cm2_mod_cartptr,sizeof(cart));
@@ -111,7 +111,7 @@ void consoleStart( struct consoleMsg  * pCons)
 }
 void consoleStop( struct consoleMsg  * pCons)
 {
-  if (pCons -> status = 0) return; // it has already ended
+  if (pCons -> status ==  0) return; // it has already ended
   int status;
   status = pthread_kill(thid, SIGABND);
   if (status  != 0)

@@ -39,8 +39,17 @@
             "................"
 const char ascii_tab[256] = ASCII_STRING ;
       char other_tab[256];
+// int debug = 0;
 void printHex(FILE * pFile,void *buff, int length)
 {
+  long long llbuff = (long long ) buff;
+  if (debug == 1) printf("printhex %16.16llx  %i\n",
+                          llbuff,length);
+  if (length <= 0)
+  {
+    printf("Invalid length passed to printHex %i\n",length);
+    length =16;
+  }
   char sepchars[2] = {' ',' '};
   int  i, j;
   unsigned char *pbuff = (unsigned char*)buff;

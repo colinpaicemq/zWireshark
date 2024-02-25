@@ -60,12 +60,12 @@ void printIPInfo(char     source[16],
    //  Now the destination
    if (memcmp(&dest[8],&isIPV4AF_INET  ,4) == 0
       ||memcmp(&dest[8],&isIPV4AF_INET6  ,4) == 0)
-      printf("--Dst %s ",
+      printf("Dst %s ",
               inet_ntop(AF_INET,&dest[12],
               &outIPBuffer[0],sizeof(outIPBuffer))
               );
    else    // it is IP V6
-        printf("-- Dst %s ",
+        printf("Dst %s ",
               inet_ntop(AF_INET6,&(dest[0]),
               &outIPBuffer[0],sizeof(outIPBuffer))
               );
