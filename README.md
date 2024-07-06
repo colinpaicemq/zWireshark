@@ -71,14 +71,16 @@ Where the parameters are (in upper case)
 
 You should specify one of --INTERFACE, --IP, --IPV6, --PORT.
 
+--PYLOAD nnnn
+: Write nnnn bytes of payload data tothe file
 
-###Output file
+### Output file
 The output file is written to the file in //PCAP.
 
 Download it to your work station in binary.
 
 
-##Stopping the program
+## Stopping the program
 The program sits in a loop waiting for trace records, or until it times out.
 You can stop it before it times out using the operator command
 ```
@@ -102,6 +104,7 @@ tso receive indsn('myid.ZWIRESHA.LOAD.XMIT')
 ``` 
 
 # Change history
-2024 Feb 24: Version 1.1 Add interface name to the printed output
-2024 Feb 24: Version 1.1 Add copyright and version to the load module 
-2024 Feb 25: Version 1.1 Fix problem in printhex caused by invalid length being used.  Simplify the write code. 
+  2024 Feb 24: Version 1.1 Add interface name to the printed output
+  2024 Feb 24: Version 1.1 Add copyright and version to the load module 
+  2024 Feb 25: Version 1.1 Fix problem in printhex caused by invalid length being used.  Simplify the write code. 
+  2024 July 6: Fix documentation problems
