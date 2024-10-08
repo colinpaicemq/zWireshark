@@ -22,16 +22,15 @@
  ************************************************************/
 #include <EZBNMCTE.h>
 #include <EZBYPTHH.h>
-
+#include <PCAP.h>
 //
 //  this routine is passed in a CTRACE format record
 //  it has one or more CTRACE records
 //  which have in turn one or more trace records
 //
-char * pWriteBuffer = 0;
-int    lWriteBuffer = 0;
 void printPacket(char * pIn ,int lIn)
 {
+ #ifdef del
   #pragma pack(1)
   // This is the structure of the pcap data header for writing
   struct
@@ -45,6 +44,8 @@ void printPacket(char * pIn ,int lIn)
         } header;
     } pcaprow;
   #pragma pack(reset)
+  #endif
+    struct pcaprow pcaprow;
   int lData;
   //
   // process the data
@@ -70,14 +71,8 @@ void printPacket(char * pIn ,int lIn)
     pH = (struct pthdr_t * )  pData ;
     lData = pH  ->  PTH_Tlen ;
     int lH = pH  ->PTH_len ;
-    int lp  = pH ->  PTH_Plen ;
-    int zz = lIn - lH - lData ;
-//  if ( zz != 18)
-//  {
-//  fprintf(stderr,"? inl %i header len %i  pl %i dl %i ! %i \n",
-//               lIn, lH, lp, lData,zz);
-//  printHex(stderr,pIn,lIn);
-//  }
+//  int lp  = pH ->  PTH_Plen ;
+//  int zz = lIn - lH - lData ;
     if (  pH  ->  PTH_Tlen +  pH  ->PTH_len > lIn) // problem?
     {
        lData =  lIn -  pH  ->  PTH_Tlen ;
@@ -96,10 +91,11 @@ void printPacket(char * pIn ,int lIn)
     int  uSeconds = tod % 1000000;
     int unixSeconds = seconds - 2208988800;
 
+    int payloadLength  = pH  ->  PTH_Plen    ;
     if (debug > 0)
     {
       int seq = pH ->  PTH_SeqNum ;
-      printf("Sequence    %i\n", seq);
+      printf("Pthread Sequence %i\n", seq);
       if (pH  -> PTH_DevTy   == 53 )
          printf("IPV6-PTH6IPAQENET ");
       else
@@ -107,8 +103,17 @@ void printPacket(char * pIn ,int lIn)
          printf("IPV4-IPAQENET     ");
       else
       printf("Device type %hhu.  ",pH  -> PTH_DevTy            );
-      printf("Interface %16.16s.\n",pH  -> PTH_Name. PTH_InfName);
+      printf("Interface %16.16s\n",pH  -> PTH_Name. PTH_InfName);
       printf("Interface index %i\n",pH  -> PTH_InfIx            );
+      printf("Original Payloadlength %i\n",payloadLength);
+      printf("Payload  traced %i\n",lData);
+      unsigned int interface = pH-> PTH_InfIx;
+      printf("interface init %i\n",interface);
+      printf("segment offset %u\n",pH-> PTH_OffSegLen);
+    }
+    if (pH-> PTH_DropRsn ) //  drop reason code
+    {
+       printf("!Drop reason code %hd\n",pH-> PTH_DropRsn);
     }
     if ( pH-> PTH_Flag.PTH_Local   )printf("PTH_ both locals  \n");
     if ( pH-> PTH_Flag.PTH_ClearTxt)printf("PTH_ClearTxt      \n");
@@ -116,59 +121,25 @@ void printPacket(char * pIn ,int lIn)
     if ( pH-> PTH_Flag.PTH_Out ) printf("<");
        else                      printf(">");
     if ( pH-> PTH_Flag.PTH_CfTxt)printf("PTH_Flag.Configdetail\n");
-//  int writeLength    = lIn - pH  ->PTH_len ; // remove header length
-
-    // PTH-TLen:  Field PTH_Tlen contains the amount of payload traced.
-// del t payloadLength  = pH  ->  PTH_Tlen    ;
-    int payloadLength  = pH  ->  PTH_Plen    ;
-    int tracedLen = pH  ->  PTH_Tlen;
-//  int lWriteData =  tracedLen    +  sizeof(pcaprow.header) ;
-
-    if (debug > 0)
-    {
-      printf("Original Payloadlength %i\n",payloadLength);
-      printf("Payload  traced %i\n",tracedLen);
-//    printf("data     written %i\n",lWriteData );
-      unsigned int interface = pH-> PTH_InfIx;
-      printf("interface init %i\n",interface);
-      printf("segment offset %u\n",pH-> PTH_OffSegLen);
-    }
-    //convert the IP address to printable
+//del int lData = pH      ->  PTH_Tlen;
+    // print the interface name
     printf("%16.16s ",pH  -> PTH_Name. PTH_InfName);
+    //convert the IP address to printable
     printIPInfo(pH  -> PTH_Ipaddrs. PTH_Src,
                 pH  -> PTH_Ipaddrs. PTH_Dst,
                 pH  -> PTH_SPort,
                 pH  -> PTH_DPort);
-    // print the data we have been passed
-//  printHex(stdout,pData + pH-> PTH_len,
-//             lWriteData        );
-    //         payloadLength                          );
-    // we need pragma pack to avoid alignment issues
-//  if ( writeLength > sizeof(pcaprow.data))
-//  {
-//     printf("trying to pass too much data, contact author: %i\n",
-//            payloadLength);
-//     writeLength = sizeof(pcaprow.data);
-//  }
     if (pcapVer ==1 )   // old format
     {
-//   printf("iface %i %16.16s\n",iface,pH  -> PTH_Name. PTH_InfName);
      pcaprow.header.seconds = unixSeconds;
      pcaprow.header.uSeconds = uSeconds ;
-     pcaprow.header.capturedLength = tracedLen  ;
+     pcaprow.header.capturedLength = lData      ;
      pcaprow.header.originalLength = payloadLength;
+     // now write out the record and the data
      writeFile("DD:PCAP",(char * )&pcaprow  ,sizeof(pcaprow));
-//!  printHex(stdout,&pcaprow  ,sizeof(pcaprow));
-//   memcpy(&pcaprow.data[0],pData + pH-> PTH_len , lWriteData );
-//   memcpy(pWriteBuffer,&pcaprow,sizeof(pcaprow));
-//   memcpy(pWriteBuffer+sizeof(pcaprow),
-//          pData + pH-> PTH_len,
-//          tracedLen );
-//    int lWrite   =  payloadLength+sizeof(pcaprow.header);
-//   writeFile("DD:PCAP",(char * )& pcaprow , lWriteData +
-//   writeFile("DD:PCAP",(char * )pWriteBuffer , lWriteData +
+     printHex(stdout,&pcaprow  ,sizeof(pcaprow));
      writeFile("DD:PCAP",pData + lH, lData);
-//!  printHex(stdout,pData + lH,lData);
+     printHex(stdout,pData + lH,lData);
     }
     else
     {

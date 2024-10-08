@@ -3,6 +3,7 @@ Produces a network trace file from TCPIP on z/OS which Wireshark can use.
 For example 
 ![example of a ping to z/OS](https://colinpaiceblog.files.wordpress.com/2024/02/zwireshark-1.jpg?w=999)
 
+
 ##  Capturing a trace
 The TCPTRACE modules uses a documented TCPIP interface to collect packet trace data.  It writes it to a file which can be downloaded and used as input to wireshark.
 
@@ -38,7 +39,7 @@ See [SAF resource names for NMI resources](https://www.ibm.com/docs/en/zos/3.1.0
  --PAYLOAD 1024 
  --DEBUG 0 
 /* 
- --GETCOUNT 1000 
+ --COUNT 1000 
  --IP   10.1.1.2 
  --IPV6 2001:db8::22b1:8b3:5051:d8db 
  --PORT 80 
@@ -63,7 +64,7 @@ Where the parameters are (in upper case)
 --PORT
 : which local port value to trace
 
---GETCOUNT
+--COUNT
 :  The number of records to trace before ending
 
 --DEBUG
@@ -71,8 +72,6 @@ Where the parameters are (in upper case)
 
 You should specify one of --INTERFACE, --IP, --IPV6, --PORT.
 
---PYLOAD nnnn
-: Write nnnn bytes of payload data tothe file
 
 ### Output file
 The output file is written to the file in //PCAP.
@@ -87,7 +86,6 @@ You can stop it before it times out using the operator command
 p COLINC5
 ```
 The program listens for this, and shuts down.
-
 
 
 ## Installation
@@ -108,3 +106,5 @@ tso receive indsn('myid.ZWIRESHA.LOAD.XMIT')
 -  2024 Feb 24: Version 1.1 Add copyright and version to the load module 
 -  2024 Feb 25: Version 1.1 Fix problem in printhex caused by invalid length being used.  Simplify the write code. 
 -  2024 July 6: Fix documentation problems
+-  2024 Oct 8:  Used Locate mode instead of Move mode to allow for big buffers.
+-  2024 Oct 8:  Fixed documentation problems with the wrong command options specified.  
