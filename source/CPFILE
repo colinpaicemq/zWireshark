@@ -50,7 +50,7 @@ void writeFile(char * fileName, char * buffer,int length)
   }
   if (debug > 0)
   {
-    fprintf(stderr,"  \n");
+    fprintf(stderr,"! \n");
     printHex(stderr,buffer,length);
   }
 }

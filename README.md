@@ -3,7 +3,11 @@ Produces a network trace file from TCPIP on z/OS which Wireshark can use.
 For example 
 ![example of a ping to z/OS](https://colinpaiceblog.files.wordpress.com/2024/02/zwireshark-1.jpg?w=999)
 
+New Function:  Produces a clear text data trace from AT-TLS encrypted sessions.  See documentation [here](./TCPDATA.md).
 
+
+
+# Network packet trace
 ##  Capturing a trace
 The TCPTRACE modules uses a documented TCPIP interface to collect packet trace data.  It writes it to a file which can be downloaded and used as input to wireshark.
 
@@ -108,3 +112,5 @@ tso receive indsn('myid.ZWIRESHA.LOAD.XMIT')
 -  2024 July 6: Fix documentation problems
 -  2024 Oct 8:  Used Locate mode instead of Move mode to allow for big buffers.
 -  2024 Oct 8:  Fixed documentation problems with the wrong command options specified.  
+-  2025 Jan 2:  Add support for TCPDATA - capturing and formatting of AT-TLS encrypted
+-  2025 Jan 2:  Minor formatting enhancements

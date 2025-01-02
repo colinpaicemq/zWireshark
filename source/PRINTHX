@@ -25,7 +25,7 @@
 #define ASCII_STRING \
                 "................" \
                 "................" \
-                " !\"#›%&'()*+,-./" \
+                " !\"#½%&'()*+,-./" \
                 "0123456789:;<=>?" \
                 "@ABCDEFGHIJKLMNO" \
                 "PQRSTUVWXYZ[\\][_" \
@@ -40,15 +40,16 @@
 const char ascii_tab[256] = ASCII_STRING ;
       char other_tab[256];
 // int debug = 0;
-void printHex(FILE * pFile,void *buff, int length)
+int  printHex(FILE * pFile,void *buff, int length)
 {
-  long long llbuff = (long long ) buff;
-  if (debug == 1) printf("printhex %16.16llx  %i\n",
-                          llbuff,length);
+//long long llbuff = (long long ) buff;
+//if (debug == 1) printf("printhex %16.16llx  %i\n",
+//                        llbuff,length);
   if (length <= 0)
   {
     printf("Invalid length passed to printHex %i\n",length);
-    length =16;
+    return 8;
+ // length =16;
   }
   char sepchars[2] = {' ',' '};
   int  i, j;

@@ -46,10 +46,12 @@ void printPacket(char * pIn ,int lIn)
   #pragma pack(reset)
   #endif
     struct pcaprow pcaprow;
-  int lData;
+  int lApplData;
   //
   // process the data
   //
+  struct pthdr_t r_t;
+  int lpthdr_t = sizeof(r_t);
   struct cte * pCTE ;  // the CTrace Entry Record
   char * pCurr = pIn;
   int i;
@@ -58,7 +60,7 @@ void printPacket(char * pIn ,int lIn)
     if (pCurr >=  pIn + lIn)
       break;  // off the end
     if ( debug > 0)
-      printf("CTE Loop %i\n");
+      printf("CTE Loop %i\n",i);
     // The record passed in is a CTrace Entry format with a header
     // the data, and a trailer.
     pCTE = (struct cte *) pCurr;
@@ -67,19 +69,28 @@ void printPacket(char * pIn ,int lIn)
     char * pData =((char *)  pCTE) + pCTE-> cteoff;
     // the traced data has a packet trace header followed by the packet
     // trace data
+//  pCTE = (struct cte *) pCurr;
+//  printf("===ctefmtid %i\n",pCTE-> ctefmtid);
+    if (pCTE-> ctefmtid == 4)
+       printf("Packet trace.  "); // no newline yet
+    else
+    if (pCTE-> ctefmtid == 5)
+       printf("Data trace.  ");  // no newline yet
+    else
+       printf("Unknown CTE trace type %d\n",pCTE-> ctefmtid);
     struct pthdr_t * pH;
     pH = (struct pthdr_t * )  pData ;
-    lData = pH  ->  PTH_Tlen ;
+    lApplData = pH -> PTH_Tlen ;
     int lH = pH  ->PTH_len ;
 //  int lp  = pH ->  PTH_Plen ;
-//  int zz = lIn - lH - lData ;
+//  int zz = lIn - lH - lApplData ;
     if (  pH  ->  PTH_Tlen +  pH  ->PTH_len > lIn) // problem?
     {
-       lData =  lIn -  pH  ->  PTH_Tlen ;
+       lApplData = lIn - pH -> PTH_Tlen ;
       if (debug > 0)
       {
          printf("bad data, buffer length %i h len %i dlen %i\n",
-                 lIn, lH, lData);
+                 lIn, lH, lApplData);
       }
     }
 
@@ -103,61 +114,117 @@ void printPacket(char * pIn ,int lIn)
          printf("IPV4-IPAQENET     ");
       else
       printf("Device type %hhu.  ",pH  -> PTH_DevTy            );
-      printf("Interface %16.16s\n",pH  -> PTH_Name. PTH_InfName);
+      if (pCTE-> ctefmtid == 4) // it is a packet trace
+        printf("  Interface %16.16s\n",pH  -> PTH_Name. PTH_InfName);
+      else
+      {
+        printf("  JobName %8.8s Domain 0x%2.2x Type 0x%2.2x "
+               "protocol 0x%2.2x state 0x%2.2x\n",
+           pH  -> PTH_Name. PTH_DtStruc. PTH_JobNm,
+           pH  -> PTH_Name. PTH_DtStruc. PTH_DtDomain,
+           pH  -> PTH_Name. PTH_DtStruc. PTH_DtType,
+           pH  -> PTH_Name. PTH_DtStruc. PTH_DtProto,
+           pH  -> PTH_Name. PTH_DtStruc. PTH_DtState);
+      }
       printf("Interface index %i\n",pH  -> PTH_InfIx            );
       printf("Original Payloadlength %i\n",payloadLength);
-      printf("Payload  traced %i\n",lData);
-      unsigned int interface = pH-> PTH_InfIx;
-      printf("interface init %i\n",interface);
-      printf("segment offset %u\n",pH-> PTH_OffSegLen);
+      printf("Payload  traced %i\n",lApplData);
+//    unsigned int interface = pH-> PTH_InfIx;
+//    printf("interface init %i\n",interface);
+      if (pCTE-> ctefmtid == 4) // it is a packet trace
+        printf("segment offset %u\n",pH-> PTH_OffSegLen);
     }
-    if (pH-> PTH_DropRsn ) //  drop reason code
+    if (pH  -> PTH_len >=  lpthdr_t) // extended block
     {
-       printf("!Drop reason code %hd\n",pH-> PTH_DropRsn);
+      if (pH-> PTH_DropRsn ) //  drop reason code, if > 0
+      {
+         printf("!Drop reason code %hd\n",pH-> PTH_DropRsn);
+      }
     }
-    if ( pH-> PTH_Flag.PTH_Local   )printf("PTH_ both locals  \n");
-    if ( pH-> PTH_Flag.PTH_ClearTxt)printf("PTH_ClearTxt      \n");
+    printf("Data length %i.  ",lApplData);
+    if ( pH-> PTH_Flag.PTH_Local   )
+       printf("PTH_ both locals .  ");
+    if ( pH-> PTH_Flag.PTH_ClearTxt)
+       printf("ATTLS Clear Text.  ");
+    // if the data is AT-TLS encrypted, we do not get to see it
+    // but this flag is set
+    if ( pH-> PTH_Flag.PTH_CfTxt)
+       printf("PTH_Flag.Confidential.  ");
+
+    printf("\n");  // write the new line after one or more outputs
     // display input or output
     if ( pH-> PTH_Flag.PTH_Out ) printf("<");
        else                      printf(">");
-    if ( pH-> PTH_Flag.PTH_CfTxt)printf("PTH_Flag.Configdetail\n");
-//del int lData = pH      ->  PTH_Tlen;
+//del int lApplData = pH  ->  PTH_Tlen;
     // print the interface name
-    printf("%16.16s ",pH  -> PTH_Name. PTH_InfName);
+//  printf("%16.16s ",pH  -> PTH_Name. PTH_InfName);
+    if (pCTE-> ctefmtid == 4) // it is a packet trace
+    {
+      printf("%16.16s ",pH  -> PTH_Name. PTH_InfName);
+    }
+    else
+    {
+      printf("%8.8s ",
+         pH  -> PTH_Name. PTH_DtStruc. PTH_JobNm);
+    }
     //convert the IP address to printable
     printIPInfo(pH  -> PTH_Ipaddrs. PTH_Src,
                 pH  -> PTH_Ipaddrs. PTH_Dst,
                 pH  -> PTH_SPort,
                 pH  -> PTH_DPort);
-    if (pcapVer ==1 )   // old format
+    if (pCTE-> ctefmtid == 4) // it is a packet trace
     {
      pcaprow.header.seconds = unixSeconds;
      pcaprow.header.uSeconds = uSeconds ;
-     pcaprow.header.capturedLength = lData      ;
+     pcaprow.header.capturedLength = lApplData  ;
      pcaprow.header.originalLength = payloadLength;
-     // now write out the record and the data
      writeFile("DD:PCAP",(char * )&pcaprow  ,sizeof(pcaprow));
      printHex(stdout,&pcaprow  ,sizeof(pcaprow));
-     writeFile("DD:PCAP",pData + lH, lData);
-     printHex(stdout,pData + lH,lData);
-    }
-    else
-    {
-   #ifdef pcap2
-     #include <pcapnp.h>
-     int iface;
-     iface = getInterface(&pH  -> PTH_Name. PTH_InfName);
-     if ( iface < 0)
+     if (lApplData > 0)
+       writeFile("DD:PCAP",pData + lH, lApplData);
+   }
+   // now write out the record and the data
+   if (debug > 0)
+     fprintf(stdout,"length appl data %d\n",lApplData);
+   char * p = pData + lH;
+   int newline = 0;
+   if (lApplData > 0)
+     if (pPrint[0] == 'A') // ascii output as EBCDIC
+       for( i=0; i<lApplData; i++  )
+       {
+          if ((*(p+i) == 0x0a || *(p+i) == 0x0d))
+          {
+           if (newline > 0)
+              printf("\n");
+           newline = 0;
+          }
+          else
+          {
+            printf("%c", ascii_tab[*(p+i)]);
+            newline ++;
+            if (newline  % 80 == 0 && newline  > 0 )
+            {
+              printf("\n");
+              newline = 0;
+            }
+          }
+       }
+     else
+     if (pPrint[0] == 'E') // ascii output as EBCDIC
+       for( i=0; i<lApplData; i++  )
+       {
+          if ( isprint(*(p+i)))
+             printf("%c",*(p+i));
+          else
+             printf(".",*(p+i));
+          if (i % 80 == 0 && i > 0 )
+            printf("\n");
+       }
+     else
      {
-        memcpy(&pcapng_idb.ovName,
-               &pH  -> PTH_Name. PTH_InfName,
-               sizeof(pcapng_idb.ovName));
-         iface = 0-iface;   // needed for the data lock
-         pcapng_idb.snapLen = 0x0000ffff;
-         //  write inteface
+       printHex(stdout,p,lApplData);
      }
-  #endif   // pcap2
-    }
+     printf("\n");
      // move to the next CTrace Entry within our data
      pCurr = pCurr +  pCTE-> ctelenp ; // to next CTE entry
   }

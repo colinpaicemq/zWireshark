@@ -34,13 +34,13 @@
  //  --INTERFACE  name  which z/OS TCPIP interface to use
  //  --DEBUG n    if n > 0 then print additional information
  //  --COUNT n    Limit number of records collected default 1000
- //  --TCPIP TCPIP which TCPIP instance
+ //  --STACK TCPIP which instance of TCPIP
+ //  --TYPE  DATA  Defaults to packet
 #ifdef delete
  //  --PCAP  n    1 is old - 2 is pcapnp
 #endif
  #pragma runopts(POSIX(ON))
 int debug=0;
-char * pPrint     = "X";
 int pcapVer = 1; // what format data to write
   /*Include standard libraries */
   #define _LARGE_TIME_API
@@ -91,10 +91,11 @@ int main( int argc, char *argv??(??))
              RCCGetInfo  get;
            };
   }  my;
-time_t timeNow,endTime;
-struct consoleMsg consoleMsg;
-memset(&consoleMsg,0,sizeof(consoleMsg));
-consoleStart(&consoleMsg);
+  time_t timeNow,endTime;
+  struct consoleMsg consoleMsg;
+  memset(&consoleMsg,0,sizeof(consoleMsg));
+  consoleStart(&consoleMsg);
+
   int lPayload = 1024; // the amount of payload we trace
   short port =  0; // default
   int waitTime=30 ;     // seconds
@@ -103,9 +104,12 @@ consoleStart(&consoleMsg);
   char * pIPV4      = "";
   char * pIPV6      = "";
   char * pTCPIP     = "TCPIP";
+  char * pTYPE     = "";
   int traceDiscard  = 0;
   int getCount      = 1000;
   int prefix        = 0;     // how many digits are significant
+  unsigned char ipv6addr[sizeof(struct in6_addr)];
+  unsigned char ipv4addr[sizeof(struct in_addr)];
   for (iArg = 1;iArg< argc; iArg ++   )
   {
      if (strcmp(argv[iArg],"--COUNT") == 0
@@ -154,14 +158,6 @@ consoleStart(&consoleMsg);
        continue;
      }
      else
-     if (strcmp(argv[iArg],"--PRINT") == 0
-        && iArg + 1 < argc ) // so we have parm after kw
-     {
-       pPrint   = argv[iArg+1];
-       iArg ++;
-       continue;
-     }
-     else
      if (strcmp(argv[iArg],"--PAYLOAD") == 0
         && iArg + 1 < argc ) // so we have parm after kw
      {
@@ -196,6 +192,14 @@ consoleStart(&consoleMsg);
         && iArg + 1 < argc ) // so we have parm after kw
      {
        pIPV6 = argv[iArg+1];
+       iArg ++;
+       continue;
+     }
+     else
+     if (strcmp(argv[iArg],"--TYPE") == 0
+        && iArg + 1 < argc ) // so we have parm after kw
+     {
+       pTyp =   argv[iArg+1] ;
        iArg ++;
        continue;
      }
@@ -242,7 +246,7 @@ consoleStart(&consoleMsg);
   my.open  .RCOPLen      = sizeof(my.open);
   my.open  .RCOPFlags   =0; //  RCOPFDESC ;
   my.open  .RCOPBufSize =10 ; // buffer size in MB
-  memcpy(&my.open  .RCOPStack,"TCPIP   ",8);
+//memcpy(&my.open  .RCOPStack,"TCPIP   ",8);
   memcpy(&my.open  .RCOPDesc ,"COLINS  ",8);
   #endif
   memset(&my ,0,sizeof(my));
@@ -255,14 +259,14 @@ consoleStart(&consoleMsg);
   my.open  .RCOPEye      = RCOPEYEC   ; // RCCOpeninfo
   my.open  .RCOPVer      = RCOPVERSION1;
   my.open  .RCOPLen      = sizeof(my.open);
-  my.open  .RCOPFlags    = RCOPFDESC ;// use the descr below
+  my.open  .RCOPFlags   =0; //  RCOPFDESC ;  ignore RCOPFDesc
   my.open  .RCOPFlags  |= RCOPFLOCMODE; // pass the buffer to us
   my.open  .RCOPBufSize =10 ; // buffer size in MB
-  // set the TCPIP image
+  // use the passed in ( or default ) TCPIP image
   memcpy(&my.open  .RCOPStack,"        ",8);
-  memcpy(&my.open  .RCOPStack[0],pTCPIP,strlen(pTCPIP));
-  printHex(stdout, &my.open  .RCOPStack[0],8);
-  memcpy(&my.open  .RCOPDesc ,"ZWIRESHA",8); // this is ig
+  strncpy(&my.open  .RCOPStack,pTCPIP,8);
+//memcpy(&my.open  .RCOPStack,"TCPIP   ",8);
+  memcpy(&my.open  .RCOPDesc ,"ZWIRESHA",8);
 
   int RV=0;
   int RC =0 ;
@@ -275,12 +279,11 @@ consoleStart(&consoleMsg);
     &RC,
     &RS);
   if ( debug > 0 || RC !=0 )
-    printf("open  %i rc %i rs %i = 0x%8.8x\n",RV,RC,RS,RS);
+    printf("open  %i rc %i rs %i %8.8x\n",RV,RC,RS,RS);
   if (RC !=  0)
   {
     if (RC == 121 )
-       printf("EZBRCIFR  Parameter error \n");
-       printHex(stdout,&my,sizeof(my));
+       printf(" Parameter error \n");
     return 8;
   }
   //
@@ -294,7 +297,7 @@ consoleStart(&consoleMsg);
   {
     int rc;
     rc =inet_pton(AF_INET,pIPV4,
-            &my.filter.RCFLPkt.RCPKIpAddr4);
+            &ipv4addr);
     if (rc != 1)
     {
        perror("inet_pton reading the IP V4 address");
@@ -306,14 +309,15 @@ consoleStart(&consoleMsg);
   {
     int rc;
     rc =inet_pton(AF_INET6,pIPV6,
-            &my.filter.RCFLPkt.RCPKIpAddr6);
+            &ipv6addr);
+//          &my.filter.RCFLPkt.RCPKIpAddr6);
     if (rc != 1)
     {
        printf("inet_pton rc %i\n",rc);
        perror("inet_pton reading the IP V6 address");
        return 8;
     }
-    my.filter.RCFLPkt.RCPKFiltFlags |= RCPKFIPV6ADDR;
+//  my.filter.RCFLPkt.RCPKFiltFlags |= RCPKFIPV6ADDR;
   }
   // trace if a packet is discarded - default is no trace
   if ( traceDiscard > 0)
@@ -342,28 +346,67 @@ consoleStart(&consoleMsg);
                 pInterface,lInterface);
     my.filter.RCFLPkt.RCPKFiltFlags |= RCPKFINTFNAME;
   }
-  lReq = sizeof(RCCHeader) + sizeof(RCCFilt);
-  // need to set packet trace
-  my.filter.RCFLPkt.RCPKPayload= lPayload; // size of data we see
-  my.filter.RCFLPkt.RCPKOptFlags |=RCPKFPAYLOAD;  // need to set this
-  my.filter.RCFLPkt.RCPKEye    = RCPKEYEC      ;
-  my.filter.RCFLEye            = RCFLEYEC;
+  // we can do a packet trace or a data trace
+  // but not both because the two structures overlay the same storage
+  //
+  if (strlen(pType) == 0)
+  {
+    lReq = sizeof(RCCHeader) + sizeof(RCCFilt);
+    if (strlen(pIPV6) > 0)
+    {
+       memcpy(&my.filter.RCFLPkt.RCPKIpAddr6,
+          &ipv6addr,size(&ipv6addr));
+       my.filter.RCFLPkt.RCPKFiltFlags |= RCPKFIPV6ADDR;
+    }
+//          &my.filter.RCFLPkt.RCPKIpAddr6);
+    // need to set packet trace
+    my.filter.RCFLPkt.RCPKPayload= lPayload; // size of data we see
+    my.filter.RCFLPkt.RCPKOptFlags |=RCPKFPAYLOAD;  // need to set this
+    my.filter.RCFLPkt.RCPKEye    = RCDAEYEC      ;
+    my.filter.RCFLEye            = RCFLEYEC;
 
-  my.filter.RCFLPkt.RCPKEye   = RCPKEYEC      ;
-  my.filter.RCFLPkt.RCPKVer   = RCPKVERSION1  ;
-  my.filter.RCFLPkt.RCPKLen   = sizeof(RCCPkt);
-  if ( port > 0)
-  {
-    my.filter.RCFLPkt.RCPKPortNum =   port;
-    my.filter.RCFLPkt.RCPKFiltFlags |= RCPKFPORTNUM;
+    my.filter.RCFLPkt.RCPKEye   = RCPKEYEC      ;
+    my.filter.RCFLPkt.RCPKVer   = RCPKVERSION1  ;
+    my.filter.RCFLPkt.RCPKLen   = sizeof(RCCPkt);
+    if ( port > 0)
+    {
+      my.filter.RCFLPkt.RCPKPortNum =   port;
+      my.filter.RCFLPkt.RCPKFiltFlags |= RCPKFPORTNUM;
+    }
+    if ( debug > 0)
+    {
+      printf("Interface\n");
+      printHex(stdout, &my.filter.RCFLPkt.RCPKIntfName,16);
+      printf("Flags\n");
+      printHex(stdout, &my.filter.RCFLPkt.RCPKFiltFlags,2);
+      printf("RCPKDiscard  %hi\n",my.filter.RCFLPkt. RCPKDiscard) ;
+    }
   }
-  if ( debug > 0)
+  else
+  //  data trace
   {
-    printf("Interface\n");
-    printHex(stdout, &my.filter.RCFLPkt.RCPKIntfName,16);
-    printf("Flags\n");
-    printHex(stdout, &my.filter.RCFLPkt.RCPKFiltFlags,2);
-    printf("RCPKDiscard  %hi\n",my.filter.RCFLPkt. RCPKDiscard) ;
+    printf("==Data  Trace=\n");
+    memset(&my.filter.RCFLDat,0,sizeof(my.filter.RCFLDat));
+    lReq = sizeof(RCCHeader) + sizeof(RCCFilt);
+    if (strlen(pIPV6) > 0)
+    {
+       memcpy(&my.filter.RCFLDat.RCPKIpAddr6,
+          &ipv6addr,size(&ipv6addr));
+       my.filter.RCFLDat.RCPKFiltFlags |= RCPKFIPV6ADDR;
+    }
+    my.filter.RCFLEye             = RCFLEYEC;
+    my.filter.RCFLDat.RCDAPayload= lPayload; //size of data we see
+    my.filter.RCFLDat.RCDAEye    = RCDAEYEC      ;
+
+    my.filter.RCFLDat.RCDAEye   = RCDAEYEC      ;
+    my.filter.RCFLDat.RCDAVer   = RCDAVERSION1  ;
+    my.filter.RCFLDat.RCDALen   = sizeof(RCCDat);
+    my.filter.RCFLDat.RCDAFiltFlags |= RCDAFiltFlagsClear ;
+    if ( port > 0)
+    {
+      my.filter.RCFLDat.RCDAPortNum =   port;
+      my.filter.RCFLDat.RCDAFiltFlags |= RCPKFPORTNUM;
+    }
   }
   EZBRCIFR((char *)&my,
      &lReq,
@@ -541,13 +584,13 @@ void printHeader(RCCHeader * pR)
   memset(&my.filter.RCFLDat,0,sizeof(my.filter.RCFLDat));
   lReq = sizeof(RCCHeader) + sizeof(RCCFilt);
   my.filter.RCFLEye             = RCFLEYEC;
-  my.filter.RCFLDat.RCPKPayload= 1024;    // size of data we see
-  my.filter.RCFLDat.RCPKPayload= 0   ;    // size of data we see
-  my.filter.RCFLDat.RCPKEye    = RCPKEYEC      ;
+  my.filter.RCFLDat.RCDAPayload= 1024;    // size of data we see
+  my.filter.RCFLDat.RCDAPayload= 0   ;    // size of data we see
+  my.filter.RCFLDat.RCDAEye    = RCDAEYEC      ;
 
-  my.filter.RCFLDat.RCPKEye   = RCPKEYEC      ;
-  my.filter.RCFLDat.RCPKVer   = RCPKVERSION1  ;
-  my.filter.RCFLDat.RCPKLen   = sizeof(RCCDat);
-  my.filter.RCFLDat.RCPKPortNum =   80;
-  my.filter.RCFLDat.RCPKFiltFlags = RCPKFPORTNUM;
+  my.filter.RCFLDat.RCDAEye   = RCDAEYEC      ;
+  my.filter.RCFLDat.RCDAVer   = RCDAVERSION1  ;
+  my.filter.RCFLDat.RCDALen   = sizeof(RCCDat);
+  my.filter.RCFLDat.RCDAPortNum =   80;
+  my.filter.RCFLDat.RCDAFiltFlags = RCDAFPORTNUM;
 #endif

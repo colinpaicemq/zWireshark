@@ -1,0 +1,168 @@
+ // program to merge multiple  pcap files into one
+ //
+ /**************************************************************
+ MIT License
+ Copyright (c) 2024 Colin Paice
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ * Contributors:
+ *   Colin Paice - Initial Contribution
+ ************************************************************/
+ #pragma comment (copyright,"Copyright:Colin Paice.  Version 1.1")
+
+ // JCL
+ // //IN1
+ // //IN2
+ // ..
+ // //OUT
+ #pragma runopts(POSIX(ON))
+  /*Include standard libraries */
+  #define _LARGE_TIME_API
+  #include <time.h>
+  #define _XOPEN_SOURCE_EXTENDED 1
+  #undef _ALL_SOURCE
+  #include <sys/time.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <stdarg.h>
+  #include <printhx.h>
+  #include <pcap.h>
+int readFile(FILE * hFile,
+                   char * pBuffer,
+                   int * lData,
+                   char * ddName,
+                   int  lExpected);
+int main( int argc, char *argv??(??))
+{
+  int rc = 0;
+  #define  COUNT   3
+  char * ddnames[]= {"DD:IN1",
+                     "DD:IN2",
+                     "DD:IN3"};
+  char * buffer[COUNT];
+  FILE * handle[COUNT];
+  int lData[COUNT];
+  int i;
+  // initial set up open and read first data record from each file
+  for (i= 0;i < COUNT;i++)
+  {
+    int lPcaprow = sizeof(struct pcaprow);
+    handle[i]= fopen(ddnames[i],"rb");
+    if (handle[i] != 0)
+    {
+      printf("file %s opened OK\n",ddnames[i]);
+      buffer[i] = malloc(1024 * 1024);
+      if (buffer[i] == 0)
+      {
+         printf("Problem with malloc\n");
+         return 8;
+      }
+      // read the global header
+      rc = readFile(handle[i],
+                    buffer[i],
+                    &lData[i],
+                    ddnames[i],
+                    sizeof(struct pcap_global_header));
+      if (rc != 0) return rc;
+      //check the magic number
+      int magicNumber = 0xa1b2c3d4;
+      if (memcmp(buffer[i],&magicNumber,sizeof(magicNumber)) !=0)
+      {
+         printf("Invalid file contents %s\n",ddnames[i]);
+         handle[i] = 0;
+         continue;
+      }
+      // now read the first record header
+      rc = readFile(handle[i],
+                    buffer[i],
+                   &lData[i],
+                    ddnames[i],
+                    lPcaprow);
+      if (rc != 0)
+      {
+        // need to flag this data set as not available
+          handle[i] = 0;
+          continue ;
+      }
+      struct pcaprow * pPcaprow = (struct pcaprow *) buffer[i];
+      // and read the data portion
+      rc = readFile(handle[i],
+                    buffer[i] + lPcaprow, //past the header
+                   &lData[i],
+                    ddnames[i],
+                    pPcaprow-> header.capturedLength);
+     if (rc != 0) return 8;
+    }
+    else // open failed so set this anyway
+    {
+      buffer[i]=0;
+    }
+  }
+  int iForever;
+  for (iForever = 0;iForever < 99999999 ; iForever ++)
+  {
+    int maxtimeS = 0x7fffffff;
+    int maxtimeuS = 0;
+    int which = -1;
+    for (i= 0;i < COUNT;i++)
+    {
+      if (handle[i] == 0) continue; // not a valid file
+      if (lData[i] == 0) continue; // end of file
+      struct pcaprow * pPcaprow = (struct pcaprow *) buffer[i];
+      // if current is older than
+      if ( pPcaprow -> seconds > maxtimeS) continue;
+      if ( (pPcaprow -> seconds < maxtimeS)
+          ||( pPcaprow -> seconds == maxtimeS
+             && pPcaprow -> uSseconds < maximeuS)
+         )
+         {
+            which = i;
+            maxtimeS = pPcaprow -> seconds;
+            maxtimeuS = pPcaprow -> uSseconds ;
+         }
+    }
+  }
+}
+int readFile(FILE * hFile,
+                   char * pBuffer,
+                   int * lData,
+                   char * ddName,
+                   int  lExpected)
+ {
+   int lRead =
+   fread(pBuffer,1,lExpected,hFile);
+   if (lRead == 0)
+   {
+     *lData = lRead;
+     return 0;
+   }
+   else
+   if (lRead == lExpected)
+   {
+     *lData = lRead;
+     return 0;
+   }
+   else
+   if (lRead == lExpected)
+   {
+     *lData = lRead;
+      printf("Problems reading data from %s\n",ddName);
+     return 8;
+   }
+   return 12;
+ }

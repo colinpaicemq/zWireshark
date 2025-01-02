@@ -1,0 +1,28 @@
+//COLINC5    JOB 1,MSGCLASS=H,COND=(4,LE)
+// SET LOADLIB=COLIN.ZWIRESHA.LOAD
+//RUN      EXEC PGM=TCPDATA,REGION=0M,PARMDD=MYPARMS
+//STEPLIB  DD DISP=SHR,DSN=&LOADLIB
+//SYSPRINT DD SYSOUT=*,DCB=(LRECL=200)
+//SYSOUT   DD SYSOUT=*
+//SYSERR   DD SYSOUT=*
+//* MYPARMS needs a / to split LE parms from program parms
+//*         needs a blank before each parm, because trailing blanks removed
+//MYPARMS DD *
+/
+ --IP   10.1.0.2
+ --WAIT 60
+ --DEBUG 0
+ --DISCARD 1
+ --PRINT A
+/*
+ --PRINT A
+ --PRINT X
+ --JOBNAME GPMSERVE
+ --PORT 8803
+ --IP   10.1.0.2
+ --PAYLOAD 2024
+ --IP   10.1.0.2
+ --GETCOUNT 1000
+ --IP   10.1.1.2
+ --IPV6 2001:db8::22b1:8b3:5051:d8db
+//

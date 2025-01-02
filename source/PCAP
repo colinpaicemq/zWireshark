@@ -1,0 +1,28 @@
+#ifndef pcap_include
+#define pcap_include
+  //  the header for the pcap file
+  struct pcap_global_header
+  {
+     int magicNumber;
+     short major;
+     short minor;
+     int reserverd1;
+     int reserverd2;
+     int snapLength;
+     int linkType;
+  }                     ;
+    // we need pragma pack to avoid alignment issues
+    #pragma pack(1)
+    // This is the structure of the pcap data header
+    struct  pcaprow
+    {
+      struct {
+        //  pcap row header
+        int seconds    ;
+        int uSeconds   ;
+        int capturedLength ;
+        int originalLength ;
+        } header;
+    }  ;
+    #pragma pack(reset)
+#endif
