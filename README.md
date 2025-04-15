@@ -54,25 +54,25 @@ Where the parameters are (in upper case)
 
 
 --WAIT 
-: wait for the specified number of seconds before ending
+: wait for the specified number of seconds before ending.
 
 --INTERFACE
-:  which TCPIP interface to trace
+:  which TCPIP interface to trace.  Issue TSO NETSTAT HOME to display the available interfaces.
 
 --IP
-:  which IP V4 address to trace, in format 10.1.1.2
+:  which IP V4 address to trace, in format 10.1.1.2.
 
 --IPV6
-:  which IPV6 interface to trace, in format 2001:db8:8::9
+:  which IPV6 interface to trace, in format 2001:db8:8::9.  Issue TSO NETSTAT HOME to display the available interfaces.
 
 --PORT
-: which local port value to trace
+: which local port value to trace.
 
 --COUNT
-:  The number of records to trace before ending
+:  The number of records to trace before ending.
 
 --DEBUG
-: If the value is greater than 0, it display additional information
+: If the value is greater than 0, it display additional information.
 
 You should specify one of --INTERFACE, --IP, --IPV6, --PORT.
 
@@ -106,7 +106,8 @@ tso receive indsn('myid.ZWIRESHA.LOAD.XMIT')
 ``` 
 
 # Change history
--  2024 Feb 24: Version 1.1 Add interface name to the printed output
+- 2025 Apr 15: UPdate doc to clarify the meaning of inteface 
+- 2024 Feb 24: Version 1.1 Add interface name to the printed output
 -  2024 Feb 24: Version 1.1 Add copyright and version to the load module 
 -  2024 Feb 25: Version 1.1 Fix problem in printhex caused by invalid length being used.  Simplify the write code. 
 -  2024 July 6: Fix documentation problems

@@ -57,25 +57,25 @@ Where the parameters are (in upper case)
 
 
 --WAIT 
-: wait for the specified number of seconds before ending
+: wait for the specified number of seconds before ending.
 
 --PAYLOAD
-: This is the number of bytes the program processes
+: This is the number of bytes the program processes.
 
 --IP
-:  which IP V4 address to trace, in format 10.1.1.2
+:  which IP V4 address to trace, in format 10.1.1.2.  Issue TSO NETSTAT HOME to display the available interfaces.
 
 --IPV6
-:  which IPV6 interface to trace, in format 2001:db8:8::9
+:  which IPV6 interface to trace, in format 2001:db8:8::9.  Issue TSO NETSTAT HOME to display the available interfaces.
 
 --PORT
-: which port value to trace
+: which port value to trace.
 
 --COUNT
-:  The number of records to trace before ending
+:  The number of records to trace before ending.
 
 --DEBUG
-: If the value is greater than 0, it display additional information
+: If the value is greater than 0, it display additional information.
 
 --PRINT 
 :  This takes a value
