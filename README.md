@@ -9,9 +9,9 @@ New Function:  Produces a clear text data trace from AT-TLS encrypted sessions. 
 
 # Network packet trace
 ##  Capturing a trace
-The TCPTRACE modules uses a documented TCPIP interface to collect packet trace data.  It writes it to a file which can be downloaded and used as input to wireshark.
+The TCPTRACE modules uses a documented TCPIP interface to collect packet trace data.  They write it to a file which can be downloaded and used as input to Wireshark.
 
-You can run it as a batchjob or as a started task.
+You can run it as a batch job or as a started task.
 The userid running the program needs access to a SERVAUTH profile.  When I ran it without permission I got
 ```  
    ICH408I USER(START1  ) GROUP(SYS1    ) NAME(####################)
@@ -20,8 +20,20 @@ The userid running the program needs access to a SERVAUTH profile.  When I ran i
      FROM EZB.TRCCTL.*.*.* (G)                                      
      ACCESS INTENT(READ   )  ACCESS ALLOWED(NONE   ) 
 ```
+I used the following definitions 
 
-You need to define a specify profile or a generic profile EZB.TRCCTL.*.*.* in class SERVAUTH           and give the userid read access to it.
+```
+permit  EZB.TRCSEC.*.*.ATTLS            - 
+   CL(SERVAUTH) id(ADCDB) access(READ) 
+permit  EZB.TRCCTL.S0W1.TCPIP.DATTRACE  - 
+   CL(SERVAUTH) id(ADCDB) access(READ) 
+permit EZB.TRCCTL.S0W1.TCPIP.OPEN  - 
+   CL(SERVAUTH) id(ADCDB) access(READ) 
+permit EZB.TRCCTL.*.*.* CL(SERVAUTH) id(ADCDB) access(READ) 
+SETROPTS RACLIST(SERVAUTH) refresh 
+```
+
+You need to define a specify profile or a generic profile EZB.TRCCTL.*.*.* in class SERVAUTH and give the userid read access to it.
 See [SAF resource names for NMI resources](https://www.ibm.com/docs/en/zos/3.1.0?topic=enablement-saf-resource-names-nmi-resources).
 ## JCL to execute the program
 
@@ -56,6 +68,9 @@ Where the parameters are (in upper case)
 --WAIT 
 : wait for the specified number of seconds before ending.
 
+--PAYLOAD
+: This is the number of bytes the program processes.
+
 --INTERFACE
 :  which TCPIP interface to trace.  Issue TSO NETSTAT HOME to display the available interfaces.
 
@@ -63,7 +78,7 @@ Where the parameters are (in upper case)
 :  which IP V4 address to trace, in format 10.1.1.2.
 
 --IPV6
-:  which IPV6 interface to trace, in format 2001:db8:8::9.  Issue TSO NETSTAT HOME to display the available interfaces.
+:  which IPV6 interface to trace, in format 2001:db8:8::9.  
 
 --PORT
 : which local port value to trace.
@@ -72,7 +87,7 @@ Where the parameters are (in upper case)
 :  The number of records to trace before ending.
 
 --DEBUG
-: If the value is greater than 0, it display additional information.
+: If the value is greater than 0, it displays additional information.
 
 You should specify one of --INTERFACE, --IP, --IPV6, --PORT.
 

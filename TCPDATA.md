@@ -12,20 +12,7 @@ The userid running the program needs access to a SERVAUTH profile.  When I ran i
      ACCESS INTENT(READ   )  ACCESS ALLOWED(NONE   ) 
 ```
 
-I used the following definitions 
 
-```
-permit  EZB.TRCSEC.*.*.ATTLS            - 
-   CL(SERVAUTH) id(ADCDB) access(READ) 
-permit  EZB.TRCCTL.S0W1.TCPIP.DATTRACE  - 
-   CL(SERVAUTH) id(ADCDB) access(READ) 
-permit EZB.TRCCTL.S0W1.TCPIP.OPEN  - 
-   CL(SERVAUTH) id(ADCDB) access(READ) 
-permit EZB.TRCCTL.*.*.* CL(SERVAUTH) id(ADCDB) access(READ) 
-SETROPTS RACLIST(SERVAUTH) refresh 
-```
-
-See [SAF resource names for NMI resources](https://www.ibm.com/docs/en/zos/3.1.0?topic=enablement-saf-resource-names-nmi-resources).
 ## JCL to execute the program
 
 ```
@@ -117,5 +104,5 @@ Where
 * Data Trace - this identifies the type of trace ( packet trace or data trace)
 * Data length - the amount of data processed.   This will be less than or equal to the --PAYLOAD value
 * ATTLS Clear Text - the data was encrypted with AT-TTLS   
-* > Input (< is output )
+* \> Input (< is output )
 * GPMSERVE - is the name of the job executing                                                                          
